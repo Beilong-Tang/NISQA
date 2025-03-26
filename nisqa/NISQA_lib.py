@@ -1453,7 +1453,7 @@ def predict_dim(model, ds, bs, dev, num_workers=0):
     model.eval()
     with torch.no_grad():
         y_hat_list = []
-        for xb, yb, (idx, n_wins) in tqdm(dl)s:
+        for xb, yb, (idx, n_wins) in tqdm(dl):
             if xb is None and yb is None:
                 y_hat_list.append([np.full((bs, 5), -1.0, dtype=float)], np.full((bs, 5), -1.0, dtype=float))
             else:
