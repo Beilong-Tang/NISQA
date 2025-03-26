@@ -1452,7 +1452,13 @@ def predict_dim(model, ds, bs, dev, num_workers=0):
     model.to(dev)
     model.eval()
     with torch.no_grad():
-        y_hat_list = [ [model(xb.to(dev), n_wins.to(dev)).cpu().numpy(), yb.cpu().numpy()] for xb, yb, (idx, n_wins) in dl]
+        y_hat_list = []
+        for xb, yb, (idx, n_wins) in tqdm(dl)s:
+            if xb is None and yb is None:
+                y_hat_list.append([np.full((bs, 5), -1.0, dtype=float)], np.full((bs, 5), -1.0, dtype=float))
+            else:
+                y_hat_list.append([model(xb.to(dev), n_wins.to(dev)).cpu().numpy(), yb.cpu().numpy()])
+        # y_hat_list = [ [model(xb.to(dev), n_wins.to(dev)).cpu().numpy(), yb.cpu().numpy()] for xb, yb, (idx, n_wins) in dl]
     yy = np.concatenate( y_hat_list, axis=1 )
     
     y_hat = yy[0,:,:]
@@ -2254,13 +2260,18 @@ def segment_specs(file_path, x, seg_length, seg_hop=1, max_length=None):
         raise ValueError('seg_length must be odd! (seg_lenth={})'.format(seg_length))
     if not torch.is_tensor(x):
         x = torch.tensor(x)
-
     n_wins = x.shape[1]-(seg_length-1)
+    
     if n_wins < 1:
-        raise ValueError(
-            f"Sample too short. Only {x.shape[1]} windows available but seg_length={seg_length}. "
-            f"Consider zero padding the audio sample. File: {file_path}"
+        print(
+            f"Sample too short. Only {x.shape[1]} windows available but seg_length={seg_length}.",
+            f"Consider zero padding the audio sample. File: {file_path}.",
+            f"For compability issues, making the output to be zero",
+            sep = "\n" 
         )
+        x = torch.zeros([48, 17], dtype = torch.float)
+        n_wins = x.shape[1]-(seg_length-1)
+        
 
     # broadcast magic to segment melspec
     idx1 = torch.arange(seg_length)
